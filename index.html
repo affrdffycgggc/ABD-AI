@@ -1,0 +1,622 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ABD AI - النظام الذكي المتكامل المتطور</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #030308;
+            --glass-bg: rgba(15, 15, 25, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-purple: #a855f7;
+            --accent-blue: #3b82f6;
+            --accent-glow: rgba(168, 85, 247, 0.6);
+            --text-main: #ffffff;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* ===== Intro & Preloader (Name Reveal) ===== */
+        #intro-preloader {
+            position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+        #intro-preloader.hidden { opacity: 0; visibility: hidden; }
+        
+        .intro-name {
+            font-size: 5rem; font-weight: 900; letter-spacing: 4px;
+            background: linear-gradient(135deg, #fff, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            text-shadow: 0 0 30px var(--accent-glow);
+            opacity: 0; transform: translateY(40px);
+            animation: introReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards, introPulse 2s ease-in-out 2s infinite;
+        }
+        @keyframes introReveal { to { opacity: 1; transform: translateY(0); } }
+        @keyframes introPulse { 50% { text-shadow: 0 0 60px var(--accent-glow), 0 0 20px #fff; } }
+
+        .intro-subtitle {
+            margin-top: 1rem; font-size: 1rem; color: rgba(255,255,255,0.5); letter-spacing: 8px;
+            opacity: 0; animation: introReveal 1s ease 1s forwards;
+        }
+
+        .intro-laser {
+            position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: linear-gradient(to bottom, transparent, var(--accent-purple), transparent);
+            transform: translateX(-50%) scaleY(0); animation: laserSweep 1.5s ease 0.5s forwards;
+        }
+        @keyframes laserSweep { 50% { transform: translateX(-50%) scaleY(1); } 100% { transform: translateX(-50%) scaleY(0); transform-origin: top; } }
+
+        /* ===== Top Progress Bar ===== */
+        #nprogress-bar {
+            position: fixed; top: 0; right: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+            box-shadow: 0 0 10px var(--accent-glow);
+            z-index: 9999; width: 0%; transition: width 0.3s ease;
+            display: none;
+        }
+
+        /* ===== Background Canvas ===== */
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
+        /* ===== Glass Effect ===== */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(var(--accent-purple), var(--accent-blue)); border-radius: 10px; }
+
+        /* ===== Animations ===== */
+        .message-enter { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ===== Admin Panel ===== */
+        #admin-panel {
+            position: fixed; top: 0; right: 0; height: 100vh; height: 100dvh; 
+            width: 100%; max-width: 450px; transform: translateX(105%);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1001; overflow-y: auto;
+        }
+        #admin-panel.open { transform: translateX(0); }
+
+        /* ===== Toasts ===== */
+        #toast-container {
+            position: fixed; bottom: 100px; left: 20px; z-index: 1002;
+            display: flex; flex-direction: column; gap: 12px; width: calc(100% - 40px); max-width: 380px;
+        }
+        .toast {
+            background: rgba(20, 20, 30, 0.95); backdrop-filter: blur(20px);
+            border: 1px solid var(--accent-purple); border-radius: 16px; padding: 16px;
+            color: white; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            animation: slideInLeft 0.4s ease, slideOutLeft 0.4s ease 4.6s forwards;
+            display: flex; align-items: center; gap: 12px;
+        }
+        @keyframes slideInLeft { from { transform: translateX(-120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutLeft { to { transform: translateX(-120%); opacity: 0; } }
+
+        /* ===== Modern Buttons (Advanced 3D & Glow) ===== */
+        .btn-modern {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .btn-modern:hover { 
+            box-shadow: 0 8px 25px var(--accent-glow); 
+            transform: translateY(-3px); 
+            border-color: rgba(255,255,255,0.4);
+        }
+        .btn-modern:active { transform: scale(0.95); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white; font-weight: bold;
+        }
+
+        /* Ripple Effect */
+        .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple-anim 0.6s linear; background: rgba(255,255,255,0.3); }
+        @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
+
+        /* ===== Admin Inputs ===== */
+        .admin-input {
+            width: 100%; padding: 14px; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            color: white; font-size: 14px; margin-bottom: 14px; transition: all 0.3s;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .admin-input:focus { outline: none; border-color: var(--accent-purple); box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.2); background: rgba(255,255,255,0.08); }
+        
+        .admin-btn {
+            width: 100%; padding: 14px; border-radius: 12px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            cursor: pointer; transition: all 0.3s; font-size: 14px; border: none; color: white;
+        }
+        .admin-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        
+        /* ===== Chat Styling ===== */
+        .chat-image { max-width: 100%; max-height: 350px; border-radius: 16px; margin-top: 10px; cursor: pointer; transition: transform 0.3s; border: 2px solid rgba(255,255,255,0.1); }
+        .chat-image:hover { transform: scale(1.02); border-color: var(--accent-purple); }
+
+        .md-content p { margin-bottom: 10px; line-height: 1.6; }
+        .md-content code { background: rgba(168, 85, 247, 0.15); padding: 3px 8px; border-radius: 6px; font-family: monospace; color: #d8b4fe; font-size: 0.9em; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .md-content pre { background: rgba(0,0,0,0.6); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow-x: auto; margin: 12px 0; }
+        .md-content pre code { background: transparent; padding: 0; color: #fff; border: none; }
+        .md-content ul, .md-content ol { margin: 10px 25px; line-height: 1.6; }
+        .md-content h1, .md-content h2, .md-content h3 { font-weight: bold; margin: 14px 0 10px; color: #fff; }
+        .md-content a { color: var(--accent-blue); text-decoration: underline; }
+        
+        @media (max-width: 768px) {
+            .chat-container { padding: 16px !important; }
+            .header-title { font-size: 1.25rem !important; }
+            .intro-name { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- شاشة التحميل واسم الموقع -->
+    <div id="intro-preloader">
+        <div class="intro-laser"></div>
+        <div class="loader-ring" id="loader-img-container" style="width: 80px; height: 80px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent-purple); border-right-color: var(--accent-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 30px;"></div>
+        <h1 class="intro-name">ABD AI</h1>
+        <p class="intro-subtitle">SYSTEM INITIALIZING</p>
+    </div>
+
+    <!-- شريط التقدم العلوي -->
+    <div id="nprogress-bar"></div>
+
+    <!-- خلفية Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- الواجهة الرئيسية -->
+    <main class="relative z-10 h-screen w-screen flex flex-col items-center p-2 md:p-4">
+        
+        <!-- بانر الإعلانات -->
+        <div class="ad-banner-container w-full max-w-4xl mb-3 md:mb-4 glass-panel rounded-2xl overflow-hidden h-20 md:h-24 relative">
+            <div id="ad-text" class="ad-banner active absolute inset-0 flex-col items-center justify-center p-2 text-center">
+                <span class="text-[10px] text-blue-400 font-bold mb-1 tracking-wider">إعلان ممول</span>
+                <p id="ad-text-content" class="text-white font-semibold text-sm md:text-lg truncate w-full px-2">جاري تحميل الإعلان...</p>
+            </div>
+        </div>
+
+        <!-- صندوق الدردشة -->
+        <div class="w-full max-w-4xl flex-1 glass-panel rounded-3xl md:rounded-[32px] flex flex-col overflow-hidden shadow-2xl mb-2">
+            
+            <header class="flex items-center justify-between p-4 md:p-6 border-b border-white/10 bg-black/10">
+                <div class="flex items-center gap-3">
+                    <div id="logo-container" class="p-2.5 md:p-3 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl btn-modern flex-shrink-0">
+                        <i data-lucide="sparkles" class="text-white w-5 h-5 md:w-6 md:h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="header-title text-xl md:text-2xl font-black bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">ABD AI</h1>
+                        <p class="text-[10px] text-white/50 tracking-wider font-medium">النسخة المؤسسية المتطورة</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-full">
+                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    <span class="text-[10px] md:text-xs text-green-400 font-bold tracking-wide">SECURE</span>
+                </div>
+            </header>
+
+            <div id="chat-container" class="chat-container flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                <div class="flex gap-4 message-enter" style="opacity:1; animation: none;">
+                    <div class="p-3 rounded-2xl bg-purple-600 shadow-lg flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="bot" class="text-white w-5 h-5"></i>
+                    </div>
+                    <div class="max-w-[80%] md:max-w-[70%] p-5 rounded-3xl glass-panel rounded-tl-none">
+                        <div class="md-content text-white/90 leading-relaxed text-sm md:text-base">
+                            <p>مرحباً بك في <strong>ABD AI</strong>. تم تفعيل طبقات الحماية، التشفير، وذاكرة المحادثة. كيف يمكنني مساعدتك اليوم؟</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="typing-indicator" class="hidden flex gap-4 mb-4 px-4 md:px-8">
+                <div class="p-3 rounded-2xl bg-purple-600 shadow-lg flex-shrink-0">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="p-5 rounded-3xl glass-panel rounded-tl-none flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0s;"></span>
+                    <span class="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></span>
+                    <span class="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></span>
+                </div>
+            </div>
+
+            <footer class="p-3 md:p-6 border-t border-white/10 bg-black/10">
+                <form id="chat-form" class="flex items-center gap-2 md:gap-3">
+                    <input type="text" id="user-input" placeholder="اكتب رسالتك هنا (أو كلمة مرور المسؤول للدخول للوحة التحكم)..." class="flex-1 p-3 md:p-4 bg-white/5 border border-white/10 rounded-2xl text-white text-sm md:text-base placeholder-white/30 focus:outline-none focus:border-purple-500 transition-all" autocomplete="off">
+                    <button type="submit" id="send-button" class="btn-modern btn-primary p-3 md:p-4 rounded-2xl text-white flex-shrink-0">
+                        <i data-lucide="send" class="w-5 h-5 md:w-6 md:h-6"></i>
+                    </button>
+                </form>
+            </footer>
+        </div>
+    </main>
+
+    <!-- لوحة التحكم الشاملة -->
+    <aside id="admin-panel" class="glass-panel border-r border-white/10 flex flex-col">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-black/40 z-10 backdrop-blur-lg">
+            <h2 class="text-xl font-black text-purple-400">مركز التحكم المتقدم</h2>
+            <button id="close-admin" class="text-white/50 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"><i data-lucide="x"></i></button>
+        </div>
+        
+        <div class="p-6 flex-1 space-y-8">
+            <!-- رفع الوسائط (شعار، أيقونة، تحميل) -->
+            <div>
+                <h3 class="text-xs font-black text-white/70 mb-4 uppercase flex items-center gap-2 tracking-wider"><i data-lucide="image" class="w-4 h-4"></i> استوديو الوسائط</h3>
+                
+                <button id="upload-logo-btn" class="admin-btn bg-indigo-600 hover:bg-indigo-700 mb-3">
+                    <i data-lucide="upload"></i> رفع شعار المتجر
+                </button>
+                <input type="file" id="logo-input" accept="image/*" class="hidden">
+
+                <button id="upload-icon-btn" class="admin-btn bg-purple-600 hover:bg-purple-700 mb-3">
+                    <i data-lucide="app-window"></i> رفع أيقونة الموقع
+                </button>
+                <input type="file" id="icon-input" accept="image/*" class="hidden">
+
+                <button id="upload-loader-btn" class="admin-btn bg-blue-600 hover:bg-blue-700 mb-3">
+                    <i data-lucide="loader"></i> رفع صورة شاشة التحميل
+                </button>
+                <input type="file" id="loader-input" accept="image/*" class="hidden">
+            </div>
+
+            <!-- الإعلانات -->
+            <div class="border-t border-white/10 pt-6">
+                <h3 class="text-xs font-black text-white/70 mb-4 uppercase flex items-center gap-2 tracking-wider"><i data-lucide="megaphone" class="w-4 h-4"></i> إدارة الإعلانات</h3>
+                <input type="text" id="new-ad-text" placeholder="اكتب الإعلان الجديد" class="admin-input">
+                <button id="update-text-ad" class="admin-btn bg-blue-600 hover:bg-blue-700">
+                    <i data-lucide="save"></i> تحديث الإعلان النصي
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- حاوية الإشعارات -->
+    <div id="toast-container"></div>
+
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. تهيئة المتغيرات والمراجع
+        // ==========================================
+        const preloader = document.getElementById('intro-preloader');
+        const nProgress = document.getElementById('nprogress-bar');
+        const chatContainer = document.getElementById('chat-container');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const adminPanel = document.getElementById('admin-panel');
+
+        let isGenerating = false;
+        let chatHistory = [];
+        let systemPrompt = "You are ABD AI, an advanced, intelligent, and helpful assistant. Respond clearly and accurately in Arabic unless asked otherwise. Use Markdown for formatting.";
+
+        // ==========================================
+        // 2. أدوات مساعدة (Helpers)
+        // ==========================================
+        function startProgress() { nProgress.style.display = 'block'; nProgress.style.width = '30%'; setTimeout(() => nProgress.style.width = '70%', 200); }
+        function endProgress() { nProgress.style.width = '100%'; setTimeout(() => { nProgress.style.display = 'none'; nProgress.style.width = '0%'; }, 300); }
+
+        function showToast(title, body, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = 'info', color = '#3b82f6';
+            if(type === 'success') { icon = 'check-circle'; color = '#10b981'; }
+            if(type === 'admin') { icon = 'bell'; color = '#a855f7'; }
+            if(type === 'error') { icon = 'alert-circle'; color = '#ef4444'; }
+            toast.style.borderColor = color;
+            toast.innerHTML = `<div style="color: ${color}"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div class="flex-1"><h4 class="font-bold text-sm mb-1">${title}</h4><p class="text-white/70 text-xs">${body}</p></div>`;
+            toastContainer.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        document.querySelectorAll('.btn-modern').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                ripple.style.width = ripple.style.height = `${size}px`;
+                ripple.style.left = `${e.clientX - rect.left - size/2}px`;
+                ripple.style.top = `${e.clientY - rect.top - size/2}px`;
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        // ==========================================
+        // 3. تحميل النظام وتهيئة الإعدادات من الخادم
+        // ==========================================
+        window.addEventListener('load', async () => {
+            setTimeout(() => { preloader.classList.add('hidden'); }, 3000);
+            chatHistory.push({ role: "system", content: systemPrompt });
+            
+            // جلب الإعدادات الحالية من الخادم
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                if(data.adText) document.getElementById('ad-text-content').textContent = data.adText;
+                
+                // تطبيق الشعار إذا كان مرفوعاً
+                if(data.logoUrl) {
+                    document.getElementById('logo-container').innerHTML = `<img src="${data.logoUrl}" class="w-full h-full object-contain rounded-xl">`;
+                }
+                
+                // تطبيق صورة التحميل إذا كانت مرفوعة
+                if(data.loaderImageUrl) {
+                    document.getElementById('loader-img-container').style.background = `url(${data.loaderImageUrl}) center/cover`;
+                    document.getElementById('loader-img-container').style.border = 'none';
+                    document.getElementById('loader-img-container').style.animation = 'none';
+                }
+                
+                // تطبيق الأيقونة
+                if(data.iconUrl) {
+                    let favicon = document.querySelector("link[rel='icon']");
+                    if(!favicon) { favicon = document.createElement('link'); favicon.rel = 'icon'; document.head.appendChild(favicon); }
+                    favicon.href = data.iconUrl;
+                }
+            } catch (e) {
+                console.log("Settings fetch failed");
+            }
+        });
+
+        // ==========================================
+        // 4. خلفية Canvas المتطورة
+        // ==========================================
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: null, y: null };
+
+        window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const density = window.innerWidth < 768 ? 30000 : 18000; 
+            initParticles(density);
+        }
+
+        function initParticles(density) {
+            particles = [];
+            const num = (canvas.width * canvas.height) / density;
+            for(let i=0; i<num; i++) {
+                particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: (Math.random() * 2) + 0.5, vx: (Math.random() * 0.5) - 0.25, vy: (Math.random() * 0.5) - 0.25 });
+            }
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for(let i=0; i<particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                if(p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                if(mouse.x && mouse.y) {
+                    let distMouse = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+                    if(distMouse < 150) {
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y);
+                        ctx.strokeStyle = `rgba(168, 85, 247, ${0.3 - distMouse/500})`; ctx.lineWidth = 1; ctx.stroke();
+                    }
+                }
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(168, 85, 247, 0.6)'; ctx.fill();
+
+                for(let j=i; j<particles.length; j++) {
+                    let p2 = particles[j];
+                    let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if(dist < 120) {
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(59, 130, 246, ${0.3 - dist/400})`; ctx.lineWidth = 0.5; ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(drawParticles);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        drawParticles();
+
+        // ==========================================
+        // 5. معالجة الإدخال والدردشة (مع التحقق من الإدارة عبر الخادم)
+        // ==========================================
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            
+            if(!text || isGenerating) return;
+            
+            // التحقق مما إذا كان النص محاولة دخول للوحة التحكم
+            // نرسله للخادم للتأكد ولا نكشف كلمة المرور هنا
+            if(text.length > 10 && !text.includes(' ')) {
+                const res = await fetch('/api/admin-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: text })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    userInput.value = '';
+                    adminPanel.classList.add('open');
+                    showToast("وضع المسؤول", "تم الدخول للوحة التحكم الشاملة بنجاح.", "admin");
+                    return;
+                }
+            }
+            
+            handleChat(text);
+            userInput.value = '';
+        });
+
+        async function handleChat(text) {
+            isGenerating = true;
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<i data-lucide="loader-circle" class="w-5 h-5 md:w-6 md:h-6 animate-spin"></i>';
+            lucide.createIcons();
+            
+            addMessage('user', text);
+            typingIndicator.classList.remove('hidden');
+            typingIndicator.classList.add('flex');
+            startProgress();
+            chatHistory.push({ role: "user", content: text });
+
+            try {
+                const response = await fetch("https://text.pollinations.ai/openai", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ model: "openai", messages: chatHistory, temperature: 0.7 })
+                });
+                if (!response.ok) throw new Error('Network error');
+                const data = await response.json();
+                const aiText = data.choices[0].message.content;
+                chatHistory.push({ role: "assistant", content: aiText });
+                
+                const encryptedResponse = CryptoJS.AES.encrypt(aiText, "LOCAL_ENCRYPT").toString();
+                const decryptedResponse = CryptoJS.AES.decrypt(encryptedResponse, "LOCAL_ENCRYPT").toString(CryptoJS.enc.Utf8);
+
+                typingIndicator.classList.add('hidden');
+                endProgress();
+                await addMessageWithTyping('assistant', decryptedResponse);
+            } catch (error) {
+                typingIndicator.classList.add('hidden');
+                endProgress();
+                addMessage('assistant', `⚠️ حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.`);
+                showToast("خطأ", "فشل الاتصال بالخادم.", "error");
+            } finally {
+                isGenerating = false;
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i data-lucide="send" class="w-5 h-5 md:w-6 md:h-6"></i>';
+                lucide.createIcons();
+            }
+        }
+
+        function addMessage(role, text, imageUrl = null) {
+            const div = document.createElement('div');
+            div.className = `flex gap-4 message-enter ${role === 'user' ? 'flex-row-reverse' : 'flex-row'}`;
+            const avatarClass = role === 'user' ? 'bg-blue-600' : 'bg-purple-600';
+            const iconClass = role === 'user' ? 'user' : 'bot';
+            const bubbleClass = role === 'user' ? 'rounded-tr-none' : 'rounded-tl-none';
+            let contentHtml = "";
+            if(role === 'user') {
+                contentHtml = `<p class="text-white/90 leading-relaxed text-sm md:text-base whitespace-pre-wrap break-words">${text}</p>`;
+            } else {
+                const cleanHtml = DOMPurify.sanitize(marked.parse(text));
+                contentHtml = `<div class="md-content text-white/90 leading-relaxed text-sm md:text-base">${cleanHtml}</div>`;
+            }
+            if(imageUrl) contentHtml += `<img src="${imageUrl}" class="chat-image" alt="Image">`;
+            div.innerHTML = `<div class="p-3 rounded-2xl ${avatarClass} shadow-lg flex items-center justify-center flex-shrink-0"><i data-lucide="${iconClass}" class="text-white w-5 h-5"></i></div><div class="max-w-[80%] md:max-w-[70%] p-4 md:p-5 rounded-3xl glass-panel ${bubbleClass}">${contentHtml}</div>`;
+            chatContainer.appendChild(div);
+            lucide.createIcons();
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function addMessageWithTyping(role, text) {
+            const div = document.createElement('div');
+            div.className = `flex gap-4 message-enter flex-row`;
+            div.innerHTML = `<div class="p-3 rounded-2xl bg-purple-600 shadow-lg flex items-center justify-center flex-shrink-0"><i data-lucide="bot" class="text-white w-5 h-5"></i></div><div class="max-w-[80%] md:max-w-[70%] p-4 md:p-5 rounded-3xl glass-panel rounded-tl-none"><div class="typing-target-class md-content text-white/90 leading-relaxed text-sm md:text-base"></div></div>`;
+            chatContainer.appendChild(div);
+            lucide.createIcons();
+            const target = div.querySelector('.typing-target-class');
+            let currentText = "";
+            for(let i=0; i<text.length; i++) {
+                currentText += text.charAt(i);
+                const cleanHtml = DOMPurify.sanitize(marked.parse(currentText));
+                target.innerHTML = cleanHtml;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                await new Promise(r => setTimeout(r, 10));
+            }
+        }
+
+        // ==========================================
+        // 6. أحداث لوحة التحكم والرفع للخادم
+        // ==========================================
+        document.getElementById('close-admin').addEventListener('click', () => adminPanel.classList.remove('open'));
+
+        document.getElementById('update-text-ad').addEventListener('click', async () => {
+            const newText = document.getElementById('new-ad-text').value.trim();
+            if(newText) {
+                const res = await fetch('/api/update-ad', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ text: newText }) });
+                if(res.ok) {
+                    document.getElementById('ad-text-content').textContent = newText;
+                    showToast("تم التحديث", "تم تحديث الإعلان بنجاح.", "success");
+                }
+            }
+        });
+
+        // رفع الصور للخادم عبر Multer
+        async function uploadFile(inputId, type, successMsg, callback) {
+            const fileInput = document.getElementById(inputId);
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    try {
+                        const res = await fetch(`/api/upload/${type}`, { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if(data.success) {
+                            showToast("تم الرفع", successMsg, "success");
+                            if(callback) callback(data.path);
+                        }
+                    } catch (err) { showToast("خطأ", "فشل رفع الملف", "error"); }
+                }
+            });
+            fileInput.click();
+        }
+
+        document.getElementById('upload-logo-btn').addEventListener('click', () => {
+            uploadFile('logo-input', 'logo', 'تم رفع شعار المتجر', (path) => {
+                document.getElementById('logo-container').innerHTML = `<img src="${path}" class="w-full h-full object-contain rounded-xl">`;
+            });
+        });
+
+        document.getElementById('upload-icon-btn').addEventListener('click', () => {
+            uploadFile('icon-input', 'icon', 'تم رفع أيقونة الموقع', (path) => {
+                let favicon = document.querySelector("link[rel='icon']");
+                if(!favicon) { favicon = document.createElement('link'); favicon.rel = 'icon'; document.head.appendChild(favicon); }
+                favicon.href = path;
+            });
+        });
+
+        document.getElementById('upload-loader-btn').addEventListener('click', () => {
+            uploadFile('loader-input', 'loader', 'تم رفع صورة التحميل', (path) => {
+                document.getElementById('loader-img-container').style.background = `url(${path}) center/cover`;
+            });
+        });
+
+    </script>
+</body>
+</html>
